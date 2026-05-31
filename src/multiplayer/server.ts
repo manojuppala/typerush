@@ -1,5 +1,5 @@
-import * as net from 'net';
-import { EventEmitter } from 'events';
+import * as net from "net";
+import { EventEmitter } from "events";
 
 export interface Player {
   id: string;
@@ -32,12 +32,14 @@ export class MultiplayerServer extends EventEmitter {
 
   start(): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.server.listen(this.port, () => {
+      // Bind to 0.0.0.0 to accept connections from other machines on the local network
+      this.server.listen(this.port, "0.0.0.0", () => {
         console.log(`Multiplayer server listening on port ${this.port}`);
+        console.log("Server is accessible from other devices on your local network (LAN)");
         resolve();
       });
 
-      this.server.on('error', reject);
+      this.server.on("error", reject);
     });
   }
 
@@ -50,27 +52,27 @@ export class MultiplayerServer extends EventEmitter {
     let playerId: string | null = null;
     let roomId: string | null = null;
 
-    socket.on('data', (data) => {
+    socket.on("data", (data: Buffer) => {
       try {
         const message = JSON.parse(data.toString());
-        
+
         switch (message.type) {
-          case 'join':
+          case "join":
             ({ playerId, roomId } = this.handleJoin(socket, message));
             break;
-          case 'progress':
+          case "progress":
             this.handleProgress(roomId, playerId, message);
             break;
-          case 'finish':
+          case "finish":
             this.handleFinish(roomId, playerId, message);
             break;
         }
       } catch (error) {
-        console.error('Error handling message:', error);
+        console.error("Error handling message:", error);
       }
     });
 
-    socket.on('close', () => {
+    socket.on("close", () => {
       if (roomId && playerId) {
         this.handleDisconnect(roomId, playerId);
       }
@@ -78,7 +80,7 @@ export class MultiplayerServer extends EventEmitter {
   }
 
   private handleJoin(socket: net.Socket, message: any): { playerId: string; roomId: string } {
-    const roomId = message.roomId || 'default';
+    const roomId = message.roomId || "default";
     const playerId = message.playerId || this.generateId();
     const playerName = message.playerName || `Player ${playerId.slice(0, 4)}`;
 
@@ -86,14 +88,14 @@ export class MultiplayerServer extends EventEmitter {
       this.rooms.set(roomId, {
         id: roomId,
         players: new Map(),
-        targetText: message.targetText || '',
+        targetText: message.targetText || "",
         started: false,
-        startTime: 0
+        startTime: 0,
       });
     }
 
     const room = this.rooms.get(roomId)!;
-    
+
     room.players.set(playerId, {
       id: playerId,
       name: playerName,
@@ -101,29 +103,31 @@ export class MultiplayerServer extends EventEmitter {
       progress: 0,
       wpm: 0,
       accuracy: 0,
-      finished: false
+      finished: false,
     });
 
     this.broadcast(roomId, {
-      type: 'playerJoined',
+      type: "playerJoined",
       playerId,
       playerName,
-      playerCount: room.players.size
+      playerCount: room.players.size,
     });
 
-    socket.write(JSON.stringify({
-      type: 'joined',
-      playerId,
-      roomId,
-      targetText: room.targetText
-    }) + '\n');
+    socket.write(
+      JSON.stringify({
+        type: "joined",
+        playerId,
+        roomId,
+        targetText: room.targetText,
+      }) + "\n",
+    );
 
     return { playerId, roomId };
   }
 
   private handleProgress(roomId: string | null, playerId: string | null, message: any): void {
     if (!roomId || !playerId) return;
-    
+
     const room = this.rooms.get(roomId);
     if (!room) return;
 
@@ -134,18 +138,22 @@ export class MultiplayerServer extends EventEmitter {
     player.wpm = message.wpm;
     player.accuracy = message.accuracy;
 
-    this.broadcast(roomId, {
-      type: 'progress',
+    this.broadcast(
+      roomId,
+      {
+        type: "progress",
+        playerId,
+        progress: player.progress,
+        wpm: player.wpm,
+        accuracy: player.accuracy,
+      },
       playerId,
-      progress: player.progress,
-      wpm: player.wpm,
-      accuracy: player.accuracy
-    }, playerId);
+    );
   }
 
   private handleFinish(roomId: string | null, playerId: string | null, message: any): void {
     if (!roomId || !playerId) return;
-    
+
     const room = this.rooms.get(roomId);
     if (!room) return;
 
@@ -157,11 +165,11 @@ export class MultiplayerServer extends EventEmitter {
     player.accuracy = message.accuracy;
 
     this.broadcast(roomId, {
-      type: 'playerFinished',
+      type: "playerFinished",
       playerId,
       playerName: player.name,
       wpm: player.wpm,
-      accuracy: player.accuracy
+      accuracy: player.accuracy,
     });
   }
 
@@ -172,9 +180,9 @@ export class MultiplayerServer extends EventEmitter {
     room.players.delete(playerId);
 
     this.broadcast(roomId, {
-      type: 'playerLeft',
+      type: "playerLeft",
       playerId,
-      playerCount: room.players.size
+      playerCount: room.players.size,
     });
 
     if (room.players.size === 0) {
@@ -186,7 +194,7 @@ export class MultiplayerServer extends EventEmitter {
     const room = this.rooms.get(roomId);
     if (!room) return;
 
-    const data = JSON.stringify(message) + '\n';
+    const data = JSON.stringify(message) + "\n";
 
     for (const [playerId, player] of room.players) {
       if (playerId !== excludePlayerId) {

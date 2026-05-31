@@ -144,7 +144,7 @@ highscores → menu
 
 - `normal` - Classic mode with difficulty levels
 - `timed` - 60-second challenge
-- `multiplayer` - Real-time network competition
+- `multiplayer` - Real-time local network (LAN) competition
 
 ### 2. UI (`src/ui.ts`)
 
@@ -328,7 +328,7 @@ array
 
 ### 8. Multiplayer Components (`src/multiplayer/`)
 
-**Network Gaming** - TCP-based multiplayer functionality (experimental).
+**Local Network Gaming** - TCP-based multiplayer functionality for LAN play.
 
 #### MultiplayerServer (`src/multiplayer/server.ts`)
 
@@ -481,7 +481,7 @@ On first use, creates:
 **Requirements**:
 
 - Multiplayer server running (`npm run server`)
-- Network connectivity between players
+- All players on same local network (WiFi/Ethernet)
 - Common room name
 
 **Flow**:
@@ -958,7 +958,7 @@ npm start
 
 1. **Terminal size** - Ensure terminal is at least 80 columns wide
 2. **File permissions** - Check `~/.typerush/` directory permissions
-3. **Network issues** - Verify server is running for multiplayer
+3. **Network issues** - Verify server is running and players are on same LAN
 4. **Sound not working** - Some terminals don't support beep character
 
 **Debug Mode**:
